@@ -15,4 +15,4 @@ const serverConfig = {
   }
 };
 
-module.exports = serverConfig;
+export default serverConfig;
