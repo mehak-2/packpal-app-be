@@ -4,10 +4,17 @@ import jwt from "jsonwebtoken";
 
 export const signup = async (req, res) => {
     try {
+        console.log("Signup request received:", { body: req.body });
         const { name, email, password } = req.body;
+
+        if (!name || !email || !password) {
+            console.log("Missing required fields");
+            return res.status(400).json({ message: "All fields are required" });
+        }
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
+            console.log("User already exists:", email);
             return res.status(400).json({ message: "User already exists" });
         }
 
@@ -16,6 +23,7 @@ export const signup = async (req, res) => {
 
         const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET || "fallback-secret", { expiresIn: "1h" });
 
+        console.log("User created successfully:", user.email);
         res.status(201).json({
             message: "User created successfully",
             token,
@@ -27,6 +35,7 @@ export const signup = async (req, res) => {
             }
         });
     } catch (err) {
+        console.error("Signup error:", err);
         res.status(500).json({ message: err.message });
     }
 };
