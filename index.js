@@ -9,6 +9,7 @@ import tripRoutes from "./routes/tripRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import destinationRoutes from "./routes/destinationRoutes.js";
 import cityRoutes from "./routes/cityRoutes.js";
+import countryRoutes from "./routes/countryRoutes.js";
 import invitationRoutes from "./routes/invitationRoutes.js";
 import serverConfig from "./config/serverConfig.js";
 
@@ -17,11 +18,7 @@ const app = express();
 
 app.use(cors({
   origin: function (origin, callback) {
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'https://packpal-app-fe-wpu1.vercel.app',
-      'https://packpal-app-fe.vercel.app'
-    ];
+    const allowedOrigins = serverConfig.corsOrigin.split(',').map(origin => origin.trim());
     
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -57,6 +54,7 @@ app.use("/api/trips", tripRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/destinations", destinationRoutes);
 app.use("/api/cities", cityRoutes);
+app.use("/api/countries", countryRoutes);
 app.use("/api/invitations", invitationRoutes);
 
 const connectDB = async (retries = 5) => {
