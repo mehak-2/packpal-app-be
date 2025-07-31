@@ -1,89 +1,73 @@
 import mongoose from "mongoose";
 
 const invitationSchema = new mongoose.Schema({
-  tripId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "Trip", 
-    required: true 
+  tripId: { type: mongoose.Schema.Types.ObjectId, ref: "Trip", required: true },
+  inviterId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  inviteeId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  role: { 
+    type: String, 
+    enum: ["view", "edit"], 
+    default: "view" 
   },
-  inviterId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "User", 
-    required: true 
+  status: { 
+    type: String, 
+    enum: ["pending", "accepted", "declined"], 
+    default: "pending" 
   },
-  inviteeId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "User", 
-    required: true 
-  },
-  status: {
-    type: String,
-    enum: ["pending", "accepted", "declined", "expired"],
-    default: "pending"
-  },
-  sentAt: {
-    type: Date,
-    default: Date.now
-  },
-  respondedAt: {
-    type: Date
-  },
-  expiresAt: {
-    type: Date,
-    default: function() {
-      return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
-    }
+  expiresAt: { 
+    type: Date, 
+    default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) 
   }
-}, {
-  timestamps: true
-});
+}, { timestamps: true });
 
-// Index for efficient queries
-invitationSchema.index({ tripId: 1, inviteeId: 1 }, { unique: true });
-invitationSchema.index({ status: 1, expiresAt: 1 });
+invitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-// Method to check if invitation is expired
 invitationSchema.methods.isExpired = function() {
   return new Date() > this.expiresAt;
 };
 
-// Method to accept invitation
-invitationSchema.methods.accept = function() {
+invitationSchema.methods.accept = async function() {
   this.status = "accepted";
-  this.respondedAt = new Date();
-  return this.save();
+  this.acceptedAt = new Date();
+  return await this.save();
 };
 
-// Method to decline invitation
-invitationSchema.methods.decline = function() {
+invitationSchema.methods.decline = async function() {
   this.status = "declined";
-  this.respondedAt = new Date();
-  return this.save();
+  this.declinedAt = new Date();
+  return await this.save();
 };
 
-// Static method to get pending invitations for a user
-invitationSchema.statics.getPendingForUser = function(userId) {
+invitationSchema.statics.getPendingForUser = async function(userId) {
+  const User = mongoose.model('User');
+  const user = await User.findById(userId);
+  if (!user) return [];
+  
   return this.find({
     inviteeId: userId,
     status: "pending",
     expiresAt: { $gt: new Date() }
   }).populate("tripId", "destination country startDate endDate")
-    .populate("inviterId", "name email");
+    .populate("inviterId", "name email")
+    .populate("inviteeId", "name email")
+    .sort({ createdAt: -1 });
 };
 
-// Static method to get invitations sent by a user
-invitationSchema.statics.getSentByUser = function(userId) {
+invitationSchema.statics.getSentByUser = async function(userId) {
   return this.find({
     inviterId: userId
   }).populate("tripId", "destination country startDate endDate")
-    .populate("inviteeId", "name email");
+    .populate("inviterId", "name email")
+    .populate("inviteeId", "name email")
+    .sort({ createdAt: -1 });
 };
 
-// Static method to get invitations for a trip
-invitationSchema.statics.getForTrip = function(tripId) {
-  return this.find({ tripId })
+invitationSchema.statics.getForTrip = async function(tripId) {
+  return this.find({
+    tripId: tripId
+  }).populate("inviterId", "name email")
     .populate("inviteeId", "name email")
-    .populate("inviterId", "name email");
+    .sort({ createdAt: -1 });
 };
 
 export default mongoose.model("Invitation", invitationSchema); 

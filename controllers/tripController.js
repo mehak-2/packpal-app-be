@@ -1,7 +1,9 @@
 import Trip from "../models/Trip.js";
+import Template from "../models/Template.js";
 import fetchWeather from "../services/weatherService.js";
 import { getDestinationInfo } from "../services/destinationService.js";
 import { generatePackingList } from "../services/packingListService.js";
+import { generatePackingList as generateAIPackingList, suggestPackingList } from "../services/aiPackingService.js";
 
 export const getTrips = async (req, res) => {
   try {
@@ -254,6 +256,163 @@ export const regeneratePackingList = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to regenerate packing list"
+    });
+  }
+}; 
+
+export const createTemplate = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user.userId;
+    const { name, packingList, destination, country } = req.body;
+
+    if (!name || !packingList || !destination || !country) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: name, packingList, destination, country"
+      });
+    }
+
+    const template = new Template({
+      userId,
+      name,
+      destination,
+      country,
+      packingList
+    });
+
+    await template.save();
+
+    res.status(201).json({
+      success: true,
+      data: template
+    });
+  } catch (error) {
+    console.error("Error creating template:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create template"
+    });
+  }
+};
+
+export const getTemplates = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user.userId;
+    
+    const templates = await Template.find({ userId })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: templates
+    });
+  } catch (error) {
+    console.error("Error fetching templates:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch templates"
+    });
+  }
+};
+
+export const deleteTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id || req.user.userId;
+
+    const template = await Template.findOneAndDelete({ _id: id, userId });
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: "Template not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Template deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error deleting template:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete template"
+    });
+  }
+}; 
+
+export const generateAIPackingListForTrip = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id || req.user.userId;
+
+    const trip = await Trip.findOne({ _id: id, userId });
+    if (!trip) {
+      return res.status(404).json({
+        success: false,
+        message: "Trip not found"
+      });
+    }
+
+    const aiPackingList = await generateAIPackingList({
+      destination: trip.destination,
+      country: trip.country,
+      startDate: trip.startDate,
+      endDate: trip.endDate,
+      activities: trip.activities,
+      weather: trip.weather,
+      destinationInfo: trip.destinationInfo
+    });
+
+    trip.packingList = aiPackingList;
+    await trip.save();
+
+    res.json({
+      success: true,
+      data: trip.packingList,
+      message: "AI packing list generated successfully"
+    });
+  } catch (error) {
+    console.error("Error generating AI packing list:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate AI packing list"
+    });
+  }
+};
+
+export const getAIPackingSuggestions = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id || req.user.userId;
+
+    const trip = await Trip.findOne({ _id: id, userId });
+    if (!trip) {
+      return res.status(404).json({
+        success: false,
+        message: "Trip not found"
+      });
+    }
+
+    const suggestions = await suggestPackingList({
+      destination: trip.destination,
+      country: trip.country,
+      startDate: trip.startDate,
+      endDate: trip.endDate,
+      activities: trip.activities
+    });
+
+    res.json({
+      success: true,
+      data: suggestions,
+      message: "AI suggestions generated successfully"
+    });
+  } catch (error) {
+    console.error("Error generating AI suggestions:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate AI suggestions"
     });
   }
 }; 

@@ -9,6 +9,7 @@ class EmailService {
   initializeTransporter() {
     if (this.initialized) return;
 
+    
     const smtpHost = process.env.SMTP_HOST;
     const smtpPort = process.env.SMTP_PORT;
     const smtpUser = process.env.SMTP_USER;
@@ -277,6 +278,115 @@ class EmailService {
       return false;
     }
   }
+
+  async sendEmail({ to, subject, template, data }) {
+    if (!this.initialized) {
+      this.initializeTransporter();
+    }
+
+    let emailContent = '';
+    
+    switch (template) {
+      case 'notification':
+        emailContent = this.generateNotificationEmail(data);
+        break;
+      case 'collaboration-invite':
+        emailContent = this.generateCollaborationInviteEmail(data);
+        break;
+      default:
+        emailContent = `<p>${data.message || 'No content provided'}</p>`;
+    }
+
+    try {
+      if (this.transporter) {
+        const mailOptions = {
+          from: process.env.SMTP_USER || process.env.FROM_EMAIL || 'noreply@packpal.com',
+          to,
+          subject,
+          html: emailContent
+        };
+
+        const result = await this.transporter.sendMail(mailOptions);
+        console.log('✅ Email sent successfully:', result.messageId);
+        return true;
+      } else {
+        console.log('=== EMAIL (Development Mode) ===');
+        console.log(`To: ${to}`);
+        console.log(`Subject: ${subject}`);
+        console.log('Content:', emailContent);
+        console.log('================================');
+        return true;
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      return false;
+    }
+  }
+
+  generateNotificationEmail(data) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${data.title}</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #3B82F6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>${data.title}</h1>
+          </div>
+          <div class="content">
+            <p>${data.message}</p>
+            ${data.tripDestination ? `<p><strong>Trip:</strong> ${data.tripDestination}</p>` : ''}
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  generateCollaborationInviteEmail(data) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Collaboration Invitation</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #3B82F6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🤝 Collaboration Invitation</h1>
+          </div>
+          <div class="content">
+            <p>Hi there!</p>
+            <p><strong>${data.inviterName}</strong> has invited you to collaborate on a trip to <strong>${data.tripDestination}, ${data.tripCountry}</strong> as a <strong>${data.role}</strong>.</p>
+            <p>You'll be able to help plan and organize this trip together!</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 }
 
-export default new EmailService(); 
+const emailServiceInstance = new EmailService();
+
+export default emailServiceInstance;
+
+export const sendEmail = (options) => {
+  return emailServiceInstance.sendEmail(options);
+}; 

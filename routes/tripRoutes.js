@@ -6,7 +6,9 @@ import {
   updateTrip,
   deleteTrip,
   updatePackingList,
-  regeneratePackingList
+  regeneratePackingList,
+  generateAIPackingListForTrip,
+  getAIPackingSuggestions
 } from "../controllers/tripController.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 
@@ -21,5 +23,7 @@ router.put("/:id", updateTrip);
 router.delete("/:id", deleteTrip);
 router.put("/:id/packing-list", updatePackingList);
 router.post("/:id/regenerate-packing-list", regeneratePackingList);
+router.post("/:id/ai-packing-list", generateAIPackingListForTrip);
+router.get("/:id/ai-suggestions", getAIPackingSuggestions);
 
 export default router; 
