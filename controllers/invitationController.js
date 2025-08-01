@@ -8,6 +8,23 @@ export const sendInvitation = async (req, res) => {
     const { tripId, inviteeEmail } = req.body;
     const inviterId = req.user.id || req.user.userId;
 
+    // Validate required fields
+    if (!tripId || !inviteeEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Trip ID and invitee email are required"
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteeEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid email address"
+      });
+    }
+
     const trip = await Trip.findOne({ _id: tripId, userId: inviterId });
     if (!trip) {
       return res.status(404).json({
@@ -22,6 +39,14 @@ export const sendInvitation = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "User not found with this email address"
+      });
+    }
+
+    // Check if user is trying to invite themselves
+    if (invitee._id.toString() === inviterId) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot invite yourself to a trip"
       });
     }
 
@@ -49,7 +74,8 @@ export const sendInvitation = async (req, res) => {
     const invitation = new Invitation({
       tripId,
       inviterId,
-      inviteeId: invitee._id
+      inviteeId: invitee._id,
+      inviteeEmail: inviteeEmail
     });
 
     await invitation.save();
@@ -72,9 +98,22 @@ export const sendInvitation = async (req, res) => {
 
   } catch (error) {
     console.error("Error sending invitation:", error);
+    
+    // Provide more specific error messages
+    let errorMessage = "Failed to send invitation";
+    
+    if (error.name === 'ValidationError') {
+      errorMessage = "Invalid invitation data provided";
+    } else if (error.name === 'CastError') {
+      errorMessage = "Invalid trip or user ID provided";
+    } else if (error.code === 11000) {
+      errorMessage = "Invitation already exists for this user and trip";
+    }
+    
     res.status(500).json({
       success: false,
-      message: "Failed to send invitation"
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
