@@ -14,6 +14,7 @@ import countryRoutes from "./routes/countryRoutes.js";
 import invitationRoutes from "./routes/invitationRoutes.js";
 import collaborationRoutes from "./routes/collaborationRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 import serverConfig from "./config/serverConfig.js";
 
 
@@ -62,6 +63,7 @@ app.use("/api/countries", countryRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/collaboration", collaborationRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/contact", contactRoutes);
 
 const connectDB = async (retries = 5) => {
   for (let i = 0; i < retries; i++) {

@@ -3,7 +3,7 @@ const serverConfig = {
   nodeEnv: process.env.NODE_ENV || 'development',
   mongoUri: process.env.MONGO_URI || 'mongodb://localhost:27017/packpal',
   jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000,https://packpal-app-fe-uy2j.vercel.app,https://packpal-app-fe.vercel.app',
+  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:3001,https://packpal-app-fe-uy2j.vercel.app,https://packpal-app-fe.vercel.app',
   emailService: {
     host: process.env.EMAIL_HOST,
     port: process.env.EMAIL_PORT,

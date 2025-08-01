@@ -74,7 +74,7 @@ class EmailService {
     
     try {
       if (this.transporter) {
-        // Send real email
+       
         const mailOptions = {
           from: process.env.SMTP_USER || process.env.FROM_EMAIL || 'noreply@packpal.com',
           to: invitee.email,
@@ -293,6 +293,9 @@ class EmailService {
       case 'collaboration-invite':
         emailContent = this.generateCollaborationInviteEmail(data);
         break;
+      case 'contact':
+        emailContent = data.emailContent || this.generateContactEmail(data);
+        break;
       default:
         emailContent = `<p>${data.message || 'No content provided'}</p>`;
     }
@@ -375,6 +378,55 @@ class EmailService {
             <p>Hi there!</p>
             <p><strong>${data.inviterName}</strong> has invited you to collaborate on a trip to <strong>${data.tripDestination}, ${data.tripCountry}</strong> as a <strong>${data.role}</strong>.</p>
             <p>You'll be able to help plan and organize this trip together!</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  generateContactEmail(data) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>New Contact Form Submission</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #3B82F6; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+          .field { margin-bottom: 15px; }
+          .label { font-weight: bold; color: #374151; }
+          .value { background: white; padding: 10px; border-radius: 4px; border-left: 4px solid #3B82F6; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>📧 New Contact Form Submission</h1>
+          </div>
+          <div class="content">
+            <div class="field">
+              <div class="label">Name:</div>
+              <div class="value">${data.name}</div>
+            </div>
+            <div class="field">
+              <div class="label">Email:</div>
+              <div class="value">${data.email}</div>
+            </div>
+            <div class="field">
+              <div class="label">Subject:</div>
+              <div class="value">${data.subject}</div>
+            </div>
+            <div class="field">
+              <div class="label">Message:</div>
+              <div class="value">${data.message.replace(/\n/g, '<br>')}</div>
+            </div>
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+              <p>This message was sent from the PackPal contact form on ${new Date().toLocaleString()}.</p>
+            </div>
           </div>
         </div>
       </body>

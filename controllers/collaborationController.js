@@ -75,6 +75,7 @@ export const inviteCollaborator = async (req, res) => {
     const invitation = new Invitation({
       tripId,
       inviterId,
+      inviteeId: invitee._id,
       inviteeEmail: email,
       role
     });

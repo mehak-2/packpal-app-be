@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 const invitationSchema = new mongoose.Schema({
   tripId: { type: mongoose.Schema.Types.ObjectId, ref: "Trip", required: true },
   inviterId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  inviteeId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  inviteeId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  inviteeEmail: { type: String, required: true },
   role: { 
     type: String, 
     enum: ["view", "edit"], 

@@ -85,3 +85,103 @@ export const completeOnboarding = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+export const getMe = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await User.findById(userId).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({ 
+            success: true,
+            data: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                onboardingCompleted: user.onboardingCompleted,
+                notifications: user.notifications,
+                personalizedRecommendations: user.personalizedRecommendations,
+                currency: user.currency
+            }
+        });
+    } catch (err) {
+        console.error("Get user error:", err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const updateUser = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { email, password, notifications } = req.body;
+
+        const updateData = {};
+        if (email) updateData.email = email;
+        if (password) {
+            const hashedPassword = await bcrypt.hash(password, 12);
+            updateData.password = hashedPassword;
+        }
+        if (notifications !== undefined) updateData.notifications = notifications;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({
+            message: "User updated successfully",
+            user: {
+                id: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                onboardingCompleted: updatedUser.onboardingCompleted,
+                notifications: updatedUser.notifications
+            }
+        });
+    } catch (err) {
+        console.error("Update user error:", err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const updatePreferences = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { notifications, personalizedRecommendations, currency } = req.body;
+
+        const updateData = {};
+        if (notifications !== undefined) updateData.notifications = notifications;
+        if (personalizedRecommendations !== undefined) updateData.personalizedRecommendations = personalizedRecommendations;
+        if (currency) updateData.currency = currency;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            updateData,
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({
+            message: "Preferences updated successfully",
+            preferences: {
+                notifications: updatedUser.notifications,
+                personalizedRecommendations: updatedUser.personalizedRecommendations,
+                currency: updatedUser.currency
+            }
+        });
+    } catch (err) {
+        console.error("Update preferences error:", err);
+        res.status(500).json({ message: err.message });
+    }
+};
